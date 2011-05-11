@@ -1,0 +1,19 @@
+{
+    "name": "mongo-pool",
+    "description": "Node MongoDB connection pool on top of node-mongodb-native",
+    "version": "0.1.0",
+    "keywords": ["mongodb", "pool"],
+    "homepage": "https://github.com/zir/node-mongo-pool",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/zir/node-mongo-pool.git"
+    },
+    "author": "Senmiao Liu <zir.echo@gmail.com> (https://github.com/zir)",
+    "main": "./index.js",
+    "engines": {
+        "node": ">=0.4.0"
+    },
+    "dependencies": {
+        "mongodb": ">=0.9.4"
+    }
+}
