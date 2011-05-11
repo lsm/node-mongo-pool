@@ -41,4 +41,4 @@
 
 ## API
 
-see [doc.html]()
+see [doc.html](http://zir.github.com/node-mongo-pool/)
