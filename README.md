@@ -23,7 +23,7 @@
            // when you don't need the client anymore,
            // you have to release it manually.
 
-           client.release();
+           pool.release(client);
 
         });
 
@@ -33,9 +33,9 @@
 
     pool.getCollection('mongo_pool_collection1', function(err, collection) {
 
-        // release the client
+        // release the collection
         
-        collection.db.release();
+        pool.release(collection);
 
     });
 
