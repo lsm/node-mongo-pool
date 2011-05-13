@@ -28,6 +28,8 @@ var MongoPool = exports.MongoPool = function MongoPool(options) {
     this._pool = [];
     // array to hold the pending requests (request a db client)
     this._queue = [];
+    // closing status
+    this._closing = false;
     // setup default options
     options = options || {};
     options.host = options.host || '127.0.0.1';
@@ -36,18 +38,22 @@ var MongoPool = exports.MongoPool = function MongoPool(options) {
     options.poolSize = options.poolSize > 0 ? options.poolSize : 5;
 
     this.on('release', function(client) {
-        if (this._queue.length > 0) {
+        if (this._closing) {
+            // close the client if pool is in `closing` status
+            client.close();
+        } else if (this._queue.length > 0) {
             this._queue.shift().call(this, client);
-        } else {
+        } else if (this._pool.indexOf(client) === -1) {
             this._pool.push(client);
         }
     });
 
+    var self = this;
     for (var i = 0; i < options.poolSize; i++) {
         this.createClient(options.host, options.port, options.db)
             .open(function(error, client) {
                 if (error) throw error;
-                client.release();
+                self.release(client);
             });
     }
 }
@@ -67,7 +73,6 @@ MongoPool.prototype.__proto__ = EventEmitter.prototype;
  */
 MongoPool.prototype.createClient = function(host, port, db) {
     var client = new mongodb.Db(db, new mongodb.Server(host, port, {auto_reconnect: true}));
-    client.pool = this;
     return client;
 };
 
@@ -101,13 +106,28 @@ MongoPool.prototype.getCollection = function(name, callback) {
     });
 };
 
-
 /**
  * Release a mongodb client to the connection pool,
  * return `true` if the releasing process is handled by `MongoPool`.
- *
+ * 
+ * @param {Object} client Instance of `mongodb.Db` or `mongodb.Collection`
  * @return {Boolean}
  */
-mongodb.Db.prototype.release = function() {
-    return this.pool instanceof MongoPool && this.pool.emit('release', this);
+MongoPool.prototype.release = function(client) {
+    if (client instanceof mongodb.Db) {
+        return this.emit('release', client);
+    } else if (client instanceof mongodb.Collection) {
+        return this.emit('release', client.db);
+    }
+    return false;
 }
+
+/**
+ * Close all db connections
+ */
+MongoPool.prototype.destory = function() {
+    this._closing = true;
+    this._pool.forEach(function(client) {
+        client.close();
+    });
+};
