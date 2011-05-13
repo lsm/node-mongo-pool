@@ -1,4 +1,4 @@
-<html>
+<a href="https://github.com/zir/node-mongo-pool"><img alt="Fork me on GitHub" id="ribbon" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a><html>
 	<head>
 		<title>node-mongo-pool</title>
 		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
@@ -108,7 +108,7 @@ code .this { color: #19469D; }</style>
 		</script>
 	</head>
 	<body>
-<table id="source"><tbody><tr><td><h1>node-mongo-pool</h1></td><td></td></tr><tr class="filename"><td><h2 id="index.js"><a href="#">index</a></h2></td><td>index.js</td></tr><tr class="code">
+<table id="source"><tbody><tr><td><h1>node-mongo-pool</h1></td><td></td></tr><tr class="filename"><td><h2 id="mongo-pool.js"><a href="#">mongo-pool</a></h2></td><td>mongo-pool.js</td></tr><tr class="code">
 <td class="docs">
 <p>Module dependencies
  </p>
@@ -131,6 +131,8 @@ Options for mongodb and MongoPool:</p><ul><li><p><code>host</code> Hostname of m
     <span class="this">this</span>.<span class="variable">_pool</span> = [];
     <span class="comment">// array to hold the pending requests (request a db client)</span>
     <span class="this">this</span>.<span class="variable">_queue</span> = [];
+    <span class="comment">// closing status</span>
+    <span class="this">this</span>.<span class="variable">_closing</span> = <span class="variable">false</span>;
     <span class="comment">// setup default options</span>
     <span class="variable">options</span> = <span class="variable">options</span> || {};
     <span class="variable">options</span>.<span class="variable">host</span> = <span class="variable">options</span>.<span class="variable">host</span> || <span class="string">'127.0.0.1'</span>;
@@ -139,18 +141,22 @@ Options for mongodb and MongoPool:</p><ul><li><p><code>host</code> Hostname of m
     <span class="variable">options</span>.<span class="variable">poolSize</span> = <span class="variable">options</span>.<span class="variable">poolSize</span> &<span class="variable">gt</span>; <span class="number integer">0</span> ? <span class="variable">options</span>.<span class="variable">poolSize</span> : <span class="number integer">5</span>;
 
     <span class="this">this</span>.<span class="variable">on</span>(<span class="string">'release'</span>, <span class="keyword">function</span>(<span class="variable">client</span>) {
-        <span class="keyword">if</span> (<span class="this">this</span>.<span class="variable">_queue</span>.<span class="variable">length</span> &<span class="variable">gt</span>; <span class="number integer">0</span>) {
+        <span class="keyword">if</span> (<span class="this">this</span>.<span class="variable">_closing</span>) {
+            <span class="comment">// close the client if pool is in `closing` status</span>
+            <span class="variable">client</span>.<span class="variable">close</span>();
+        } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="this">this</span>.<span class="variable">_queue</span>.<span class="variable">length</span> &<span class="variable">gt</span>; <span class="number integer">0</span>) {
             <span class="this">this</span>.<span class="variable">_queue</span>.<span class="variable">shift</span>().<span class="variable">call</span>(<span class="this">this</span>, <span class="variable">client</span>);
-        } <span class="keyword">else</span> {
+        } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="this">this</span>.<span class="variable">_pool</span>.<span class="variable">indexOf</span>(<span class="variable">client</span>) === -<span class="number integer">1</span>) {
             <span class="this">this</span>.<span class="variable">_pool</span>.<span class="variable">push</span>(<span class="variable">client</span>);
         }
     });
 
+    <span class="keyword">var</span> <span class="variable">self</span> = <span class="this">this</span>;
     <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">i</span> = <span class="number integer">0</span>; <span class="variable">i</span> &<span class="variable">lt</span>; <span class="variable">options</span>.<span class="variable">poolSize</span>; <span class="variable">i</span>++) {
         <span class="this">this</span>.<span class="variable">createClient</span>(<span class="variable">options</span>.<span class="variable">host</span>, <span class="variable">options</span>.<span class="variable">port</span>, <span class="variable">options</span>.<span class="variable">db</span>)
             .<span class="variable">open</span>(<span class="keyword">function</span>(<span class="variable">error</span>, <span class="variable">client</span>) {
                 <span class="keyword">if</span> (<span class="variable">error</span>) <span class="keyword">throw</span> <span class="variable">error</span>;
-                <span class="variable">client</span>.<span class="variable">release</span>();
+                <span class="variable">self</span>.<span class="variable">release</span>(<span class="variable">client</span>);
             });
     }
 }</code></pre>
@@ -176,7 +182,6 @@ Options for mongodb and MongoPool:</p><ul><li><p><code>host</code> Hostname of m
 <td class="code">
 <pre><code><span class="class">MongoPool</span>.<span class="variable">prototype</span>.<span class="variable">createClient</span> = <span class="keyword">function</span>(<span class="variable">host</span>, <span class="variable">port</span>, <span class="variable">db</span>) {
     <span class="keyword">var</span> <span class="variable">client</span> = <span class="keyword">new</span> <span class="variable">mongodb</span>.<span class="class">Db</span>(<span class="variable">db</span>, <span class="keyword">new</span> <span class="variable">mongodb</span>.<span class="class">Server</span>(<span class="variable">host</span>, <span class="variable">port</span>, {<span class="variable">auto_reconnect</span>: <span class="variable">true</span>}));
-    <span class="variable">client</span>.<span class="variable">pool</span> = <span class="this">this</span>;
     <span class="keyword">return</span> <span class="variable">client</span>;
 };</code></pre>
 </td>
@@ -222,12 +227,31 @@ return <code>true</code> if the releasing process is handled by <code>MongoPool<
 
 <h2></h2>
 
-<ul><li><p><strong>return</strong>: <em>Boolean</em> </p></li></ul>
+<ul><li><p><strong>param</strong>: <em>Object</em>  client Instance of <code>mongodb.Db</code> or <code>mongodb.Collection</code></p></li><li><p><strong>return</strong>: <em>Boolean</em> </p></li></ul>
 </td>
 <td class="code">
-<pre><code><span class="variable">mongodb</span>.<span class="class">Db</span>.<span class="variable">prototype</span>.<span class="variable">release</span> = <span class="keyword">function</span>() {
-    <span class="keyword">return</span> <span class="this">this</span>.<span class="variable">pool</span> <span class="variable">instanceof</span> <span class="class">MongoPool</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>; <span class="this">this</span>.<span class="variable">pool</span>.<span class="variable">emit</span>(<span class="string">'release'</span>, <span class="this">this</span>);
+<pre><code><span class="class">MongoPool</span>.<span class="variable">prototype</span>.<span class="variable">release</span> = <span class="keyword">function</span>(<span class="variable">client</span>) {
+    <span class="keyword">if</span> (<span class="variable">client</span> <span class="variable">instanceof</span> <span class="variable">mongodb</span>.<span class="class">Db</span>) {
+        <span class="keyword">return</span> <span class="this">this</span>.<span class="variable">emit</span>(<span class="string">'release'</span>, <span class="variable">client</span>);
+    } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="variable">client</span> <span class="variable">instanceof</span> <span class="variable">mongodb</span>.<span class="class">Collection</span>) {
+        <span class="keyword">return</span> <span class="this">this</span>.<span class="variable">emit</span>(<span class="string">'release'</span>, <span class="variable">client</span>.<span class="variable">db</span>);
+    }
+    <span class="keyword">return</span> <span class="variable">false</span>;
 }</code></pre>
+</td>
+</tr>
+<tr class="code">
+<td class="docs">
+<p>Close all db connections
+ </p>
+</td>
+<td class="code">
+<pre><code><span class="class">MongoPool</span>.<span class="variable">prototype</span>.<span class="variable">destory</span> = <span class="keyword">function</span>() {
+    <span class="this">this</span>.<span class="variable">_closing</span> = <span class="variable">true</span>;
+    <span class="this">this</span>.<span class="variable">_pool</span>.<span class="variable">forEach</span>(<span class="keyword">function</span>(<span class="variable">client</span>) {
+        <span class="variable">client</span>.<span class="variable">close</span>();
+    });
+};</code></pre>
 </td>
 </tr>	</body>
 </html></tbody></table>
