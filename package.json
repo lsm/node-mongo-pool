@@ -9,11 +9,11 @@
         "url": "git://github.com/zir/node-mongo-pool.git"
     },
     "author": "Senmiao Liu <zir.echo@gmail.com> (https://github.com/zir)",
-    "main": "./index.js",
+    "main": "./mongo-pool.js",
     "engines": {
         "node": ">=0.4.0"
     },
     "dependencies": {
-        "mongodb": ">=0.9.4"
+        "mongodb": "~0.9.4"
     }
 }
