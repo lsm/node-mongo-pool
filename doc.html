@@ -246,7 +246,7 @@ return <code>true</code> if the releasing process is handled by <code>MongoPool<
  </p>
 </td>
 <td class="code">
-<pre><code><span class="class">MongoPool</span>.<span class="variable">prototype</span>.<span class="variable">destory</span> = <span class="keyword">function</span>() {
+<pre><code><span class="class">MongoPool</span>.<span class="variable">prototype</span>.<span class="variable">destroy</span> = <span class="keyword">function</span>() {
     <span class="this">this</span>.<span class="variable">_closing</span> = <span class="variable">true</span>;
     <span class="this">this</span>.<span class="variable">_pool</span>.<span class="variable">forEach</span>(<span class="keyword">function</span>(<span class="variable">client</span>) {
         <span class="variable">client</span>.<span class="variable">close</span>();

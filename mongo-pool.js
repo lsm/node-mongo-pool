@@ -125,7 +125,7 @@ MongoPool.prototype.release = function(client) {
 /**
  * Close all db connections
  */
-MongoPool.prototype.destory = function() {
+MongoPool.prototype.destroy = function() {
     this._closing = true;
     this._pool.forEach(function(client) {
         client.close();
