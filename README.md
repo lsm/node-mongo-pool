@@ -1,3 +1,7 @@
+## Note
+
+node-mongodb-native has more mature pooling support after 0.9.6-1, please use that instead.
+
 ## Installation
 
     npm install mongo-pool
